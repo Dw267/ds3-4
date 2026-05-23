@@ -230,9 +230,9 @@ private:
     void ShowMenu() {
         cout << "\n* Data Structures and Algorithms *" << endl;
         cout << "**** Graph data manipulation *****" << endl;
-        cout << "* 0. QUIT                       *" << endl;
-        cout << "* 1. Build adjacency lists      *" << endl;
-        cout << "* 2. Compute connection counts  *" << endl;
+        cout << "* 0. QUIT                        *" << endl;
+        cout << "* 1. Build adjacency lists       *" << endl;
+        cout << "* 2. Compute connection counts   *" << endl;
         cout << "**********************************" << endl;
         cout << "Input a choice(0, 1, 2): ";
     }
@@ -256,7 +256,7 @@ public:
                     graph.ComputeConnectionCounts(currentFileNum);
                 }
             } else {
-                cout << "\n### Command does not exist! ###\n";
+                cout << "\nCommand does not exist!\n";
             }
         }
     }
