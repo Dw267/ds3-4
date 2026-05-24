@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iomanip>
-#include <queue>    // 任務二需要 queue
-#include <set>      // 用於收集不重複且排序的收訊者
+#include <queue>    // Queue for mission 2 BFS
+#include <set>      // Set for collecting unique and sorted recipients
 
 using namespace std;
 
@@ -26,7 +26,7 @@ struct AdjList {
     vector<AdjNode> nodes;
 };
 
-// 任務二使用的結果結構
+// This strcuture is build for mission 2, to store the BFS result for each ID
 struct ConnectionResult {
     string putID;
     int count;
@@ -37,7 +37,7 @@ class GraphAdjacencyList {
 private:
     vector<AdjList> lists;
     unordered_map<string, int> idMap;
-    int edgeCount = 0; // 改名為 edgeCount 較精確
+    int edgeCount = 0; // Edge counting
 
     string CharToString(char id[12]) {
         string s = "";
@@ -82,7 +82,7 @@ private:
         }
     }
 
-    // 任務二：執行 BFS 並回傳結果
+    // Mission 2: BFS to find all reachable IDs from given start index
     ConnectionResult RunBFS(int startIdx) {
         ConnectionResult res;
         res.putID = lists[startIdx].putID;
@@ -97,12 +97,12 @@ private:
             int currIdx = q.front();
             q.pop();
             for (const auto& neighbor : lists[currIdx].nodes) {
-                // 關鍵修改：只有當鄰居學號不是「自己」時，才列入連通清單
+                // Only add to visitedIDs if it's not the starting ID itself, to avoid counting self-loop as a connection
                 if (neighbor.getID != res.putID) { 
                     visitedIDs.insert(neighbor.getID);
                 }
                 
-                // BFS 的搜尋邏輯保持不變（依然要透過自己往後找，才能找到完整路徑）
+                // The basic BFS part to explore neighbors
                 int neighborIdx = idMap[neighbor.getID];
                 if (!visited[neighborIdx]) {
                     visited[neighborIdx] = true;
@@ -141,77 +141,83 @@ public:
 
         SortLists();
         
-        // 寫入 .adj 檔案
+        // Output .adj file
         ofstream fout("pairs" + fileNum + ".adj");
         fout << "<<< There are " << lists.size() << " IDs in total. >>>" << endl; // First line
 
         for (int i = 0; i < (int)lists.size(); i++) {
+            // School ID line
             fout << "[" << setw(3) << i + 1 << "] " << lists[i].putID << ": " << endl;
             if (!lists[i].nodes.empty()) {
-                fout << "\t"; // 開頭縮排
                 for (int j = 0; j < (int)lists[i].nodes.size(); j++) {
+                    // Indent at the beginning of the line (if it's the first neighbor or every 12 neighbors)
+                    if (j % 12 == 0) fout << "\t";
+
                     fout << "(" << setw(2) << j + 1 << ") " 
                          << lists[i].nodes[j].getID << "," 
                          << setw(7) << lists[i].nodes[j].weight;
                     
-                    if (j < (int)lists[i].nodes.size() - 1) {
-                        fout << "\t"; // 鄰居之間用 tab 分隔
+                    // Change line every 12 neightbors or at the end of the neighbor list
+                    if ((j + 1) % 12 == 0 && j == (int)lists[i].nodes.size() - 1) {
+                        fout << "\n"<< endl;
+                    } else if ((j + 1) % 12 == 0 || j == (int)lists[i].nodes.size() - 1){
+                        fout << endl;
+                    } else {
+                        fout << "\t"; // Same line separation
                     }
                 }
-                fout << endl;
             }
         }
         fout << "<<< There are " << edgeCount << " nodes in total. >>>" << endl;
         fout.close();
 
-        // 螢幕輸出
-        cout << "\n<<< There are " << lists.size() << " IDs in total. >>>\n";
+        // Screen display
+        cout << "\n<<< There are " << lists.size() << " IDs in total. >>>\n\n";
         cout << "<<< There are " << edgeCount << " nodes in total. >>>\n";
         return true;
     }
 
     void ComputeConnectionCounts(string fileNum) {
         if (IsEmpty()) {
-            cout << "\n### Please build adjacency lists first (Mission 1). ###\n";
+            cout << "### There is no graph and choose 1 first. ###\n";
             return;
         }
 
         vector<ConnectionResult> results;
-        // 對每個 ID 跑一次 BFS
+        // Run a BFS on each ID
         for (int i = 0; i < lists.size(); i++) {
             results.push_back(RunBFS(i));
         }
 
-        // 任務二排序要求：連通數由大到小，學號由小到大
+        // Mission 2 sorting requirement: connection count from large to small, ID from small to large
         sort(results.begin(), results.end(), [](const ConnectionResult& a, const ConnectionResult& b) {
             if (a.count != b.count) return a.count > b.count;
             return a.putID < b.putID;
         });
 
-        // 寫入 .cnt 檔案
+        // Output .cnt file
         ofstream fout("pairs" + fileNum + ".cnt");
         fout << "<<< There are " << results.size() << " IDs in total. >>>" << endl;
 
         for (int i = 0; i < (int)results.size(); i++) {
-            // [編號] 學號(連通數): 換行
+            // School ID line with connection count
             fout << "[" << setw(3) << i + 1 << "] " << results[i].putID 
                  << "(" << results[i].count << "): " << endl;
 
             if (!results[i].reachableIDs.empty()) {
                 for (int j = 0; j < (int)results[i].reachableIDs.size(); j++) {
-                    // 每行開頭縮排 (如果是第一個或每 12 個一組的開頭)
+                    // Indent at the beginning of the line
                     if (j % 12 == 0) fout << "\t";
 
                     fout << "(" << setw(2) << j + 1 << ") " << results[i].reachableIDs[j];
 
-                    // 每 12 個換行一次，或是在該學號清單結束時換行
-                    if ((j + 1) == 12 && j == (int)results[i].reachableIDs.size() - 1) {
+                    // Change line every 12 neightbors
+                    if ((j + 1) % 12 == 0 && j == (int)results[i].reachableIDs.size() - 1) {
                         fout << "\n" << endl;
-                    }
-                    else if ((j + 1) % 12 == 0 || j == (int)results[i].reachableIDs.size() - 1) {
+                    } else if ((j + 1) % 12 == 0 || j == (int)results[i].reachableIDs.size() - 1) {
                         fout << endl;
                     } else {
-                        fout << "\t"; // 資料間用 tab 分隔
+                        fout << "\t"; // Seperate datas with tab
                     }
                 }
             }
@@ -222,11 +228,12 @@ public:
     }
 };
 
+// Main System body
 class DataStructureSystem {
 private:
     GraphAdjacencyList graph;
     string currentFileNum = "";
-
+    // Menu display
     void ShowMenu() {
         cout << "\n* Data Structures and Algorithms *" << endl;
         cout << "**** Graph data manipulation *****" << endl;
@@ -239,17 +246,16 @@ private:
 
 public:
     void Run() {
-        int command;
+        string command;
         while (true) {
             ShowMenu();
-            if (!(cin >> command)) break;
-
-            if (command == 0) break;
-            else if (command == 1) {
+            cin >> command;
+            if (command == "0") break;
+            else if (command == "1") {
                 cout << "\nInput a file number ([0] Quit): ";
                 cin >> currentFileNum;
                 if (currentFileNum != "0") graph.BuildAdjacencyLists(currentFileNum);
-            } else if (command == 2) {
+            } else if (command == "2") {
                 if (currentFileNum == "" || currentFileNum == "0") {
                     cout << "### There is no graph and choose 1 first. ###\n";
                 } else {
@@ -262,6 +268,7 @@ public:
     }
 };
 
+// Main function
 int main() {
     DataStructureSystem system;
     system.Run();
