@@ -35,7 +35,7 @@ struct ConnectionResult {
 };
 
 class GraphAdjacencyList {
-private:
+ private:
     vector<AdjList> lists;
     unordered_map<string, int> idMap;
     int edgeCount = 0; // Edge counting
@@ -116,7 +116,27 @@ private:
         return res;
     }
 
-public:
+    // DFS function for mission 3
+    void RunDFSRecursive(int currIdx, float threshold, vector<bool>& visited, set<string>& influenceIDs, const string& startID) {
+    visited[currIdx] = true;
+
+        for (const auto& neighbor : lists[currIdx].nodes) {
+            // 判斷是否為「有效邊」
+            if (neighbor.weight >= threshold) {
+                // 如果不是自己，則加入影響力名單（符合任務二三的一致性邏輯）
+                if (neighbor.getID != startID) {
+                    influenceIDs.insert(neighbor.getID);
+                }
+
+                int neighborIdx = idMap[neighbor.getID];
+                if (!visited[neighborIdx]) {
+                    RunDFSRecursive(neighborIdx, threshold, visited, influenceIDs, startID);
+                }
+            }
+        }
+    }
+
+ public:
     void Clear() {
         lists.clear();
         idMap.clear();
@@ -227,11 +247,82 @@ public:
         // Screen display
         cout << "\n<<< There are " << lists.size() << " IDs in total. >>>\n";
     }
+
+    void ComputeInfluence(string fileNum) {
+        if (IsEmpty()) {
+            cout << "\n### Please build adjacency lists first (Mission 1). ###\n";
+            return;
+        }
+        // User first input threshold
+        float threshold;
+        while (true) {
+            cout << "Input a real number in [0.66,1.0]: ";
+            cin >> threshold;
+            if (threshold >= 0.66 && threshold <= 1.0) {
+                break;
+            }
+            cout << "### Threshold must be between 0.66 and 1.0! ###" << endl;
+        }
+
+        vector<ConnectionResult> results;
+
+        // DFS on eveery ID
+        for (int i = 0; i < (int)lists.size(); i++) {
+            ConnectionResult res;
+            res.putID = lists[i].putID;
+
+            set<string> influenceIDs;
+            vector<bool> visited(lists.size(), false);
+
+            // Run DFS
+            RunDFSRecursive(i, threshold, visited, influenceIDs, res.putID);
+
+            res.count = (int)influenceIDs.size();
+            for (const string& id : influenceIDs) res.reachableIDs.push_back(id);
+
+            // Only adding results greater than 0
+            if (res.count > 0) {
+                results.push_back(res);
+            }
+        }
+
+        // Sorting influence from large to small, IDs from small to big
+        sort(results.begin(), results.end(), [](const ConnectionResult& a, const ConnectionResult& b) {
+        if (a.count != b.count) return a.count > b.count;
+            return a.putID < b.putID;
+        });
+
+        cout << "<<< There are " << results.size() << " IDs in total. >>>" << endl;
+
+        // Output .inf file
+        ofstream fout("pairs" + fileNum + ".inf");
+        fout << "<<< There are " << results.size() << " IDs in total. >>>" << endl;
+
+        for (int i = 0; i < (int)results.size(); i++) {
+            fout << "[" << setw(3) << i + 1 << "] " << results[i].putID
+                 << "(" << results[i].count << "): " << endl;
+
+            for (int j = 0; j < (int)results[i].reachableIDs.size(); j++) {
+                if (j % 12 == 0) fout << "\t";
+                fout << "(" << setw(2) << j + 1 << ") " << results[i].reachableIDs[j];
+
+                if ((j + 1) % 12 == 0 && j == (int)results[i].reachableIDs.size() - 1) {
+                    fout << "\n" << endl;
+                } else if ((j + 1) % 12 == 0 || j == (int)results[i].reachableIDs.size() - 1) {
+                    fout << endl;
+                } else {
+                    fout << "\t";
+                }
+            }
+            fout << endl;
+        }
+        fout.close();
+    }
 };
 
 // Main System body
 class DataStructureSystem {
-private:
+ private:
     GraphAdjacencyList graph;
     string currentFileNum = "";
     // Menu display
@@ -241,11 +332,13 @@ private:
         cout << "* 0. QUIT                        *" << endl;
         cout << "* 1. Build adjacency lists       *" << endl;
         cout << "* 2. Compute connection counts   *" << endl;
+        cout << "* 3. Estimate influence values   *" << endl;
+        cout << "* 4. Find top-k influence values *" << endl;
         cout << "**********************************" << endl;
-        cout << "Input a choice(0, 1, 2): ";
+        cout << "Input a choice(0, 1, 2, 3, 4): ";
     }
 
-public:
+ public:
     void Run() {
         string command;
         while (true) {
@@ -261,6 +354,18 @@ public:
                     cout << "### There is no graph and choose 1 first. ###\n";
                 } else {
                     graph.ComputeConnectionCounts(currentFileNum);
+                }
+            } else if (command == "3") {
+                if (currentFileNum == "" || currentFileNum == "0") {
+                    cout << "### There is no graph and choose 1 first. ###\n";
+                } else {
+                    graph.ComputeInfluence(currentFileNum);
+                }
+            } else if (command == "4") {
+                if (currentFileNum == "" || currentFileNum == "0") {
+                    cout << "### There is no graph and choose 1 first. ###\n";
+                } else {
+                    cout << "Doing mission 4 !!!\n";
                 }
             } else {
                 cout << "\nCommand does not exist!\n";
