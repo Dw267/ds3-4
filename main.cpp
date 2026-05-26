@@ -261,7 +261,7 @@ class GraphAdjacencyList {
             if (threshold >= 0.66 && threshold <= 1.0) {
                 break;
             }
-            cout << "### Threshold must be between 0.66 and 1.0! ###" << endl;
+            cout << "\n### It is NOT in [0.66,1.0] ###\n" << endl;
         }
 
         vector<ConnectionResult> results;
@@ -314,7 +314,6 @@ class GraphAdjacencyList {
                     fout << "\t";
                 }
             }
-            fout << endl;
         }
         fout.close();
     }
