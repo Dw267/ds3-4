@@ -255,13 +255,34 @@ class GraphAdjacencyList {
         }
         // User first input threshold
         float threshold;
+        string inputStr;
         while (true) {
-            cout << "Input a real number in [0.66,1.0]: ";
-            cin >> threshold;
-            if (threshold >= 0.66 && threshold <= 1.0) {
-                break;
+            cout << "Input a real number in [0.66, 1.0]: ";
+            cin >> inputStr; // Read in to check if is float
+
+            // Check if string is float
+            bool isValid = true;
+            int dotCount = 0;
+            for (char c : inputStr) {
+                if (c == '.') {
+                    dotCount++;
+                } else if (!isdigit(c)) {
+                    isValid = false; // Input again
+                    continue;
+                }
             }
-            cout << "\n### It is NOT in [0.66,1.0] ###\n" << endl;
+
+            if (isValid && dotCount <= 1) {
+                threshold = (float)atof(inputStr.c_str()); // 轉換為 float
+
+                if (threshold >= 0.66f && threshold <= 1.0f) {
+                    break;
+                } else {
+                    cout << "\n### It is NOT in [0.66,1.0] ###\n" << endl;
+                }
+            } else {
+                continue;
+            }
         }
 
         vector<ConnectionResult> results;
